@@ -12,7 +12,7 @@ pub fn make_module(vm: &VirtualMachine) -> PyObjectRef {
 mod _socket {
     use crate::common::lock::{PyMappedRwLockReadGuard, PyRwLock, PyRwLockReadGuard};
     use crate::vm::{
-        builtins::{PyBaseExceptionRef, PyListRef, PyStrRef, PyTupleRef, PyTypeRef},
+        builtins::{PyBaseExceptionRef, PyListRef, PyStrRef, PyTupleRef, PyType, PyTypeRef},
         function::{
             ArgBytesLike, ArgMemoryBuffer, FuncArgs, IntoPyException, IntoPyObject, OptionalArg,
             OptionalOption,
@@ -50,11 +50,14 @@ mod _socket {
     const HAS_IPV6: bool = true;
     #[pyattr]
     use c::{
-        AF_APPLETALK, AF_INET, AF_INET6, AF_IPX, AF_UNSPEC, IPPROTO_IP, IPPROTO_IP as IPPROTO_IPIP,
-        IPPROTO_IPV6, IPPROTO_TCP, IPPROTO_TCP as SOL_TCP, IPPROTO_UDP, MSG_OOB, MSG_PEEK,
-        MSG_WAITALL, NI_DGRAM, NI_NAMEREQD, NI_NOFQDN, NI_NUMERICHOST, NI_NUMERICSERV, SHUT_RD,
-        SHUT_RDWR, SHUT_WR, SOCK_DGRAM, SOCK_STREAM, SOL_SOCKET, SO_BROADCAST, SO_ERROR, SO_LINGER,
-        SO_OOBINLINE, SO_REUSEADDR, SO_TYPE, TCP_NODELAY,
+        AF_INET, AF_INET6, AF_UNSPEC, INADDR_ANY, INADDR_NONE, IPPROTO_AH, IPPROTO_DSTOPTS,
+        IPPROTO_EGP, IPPROTO_ESP, IPPROTO_FRAGMENT, IPPROTO_HOPOPTS, IPPROTO_ICMP, IPPROTO_ICMPV6,
+        IPPROTO_IDP, IPPROTO_IGMP, IPPROTO_IP, IPPROTO_IP as IPPROTO_IPIP, IPPROTO_IPV6,
+        IPPROTO_MAX, IPPROTO_NONE, IPPROTO_PIM, IPPROTO_PUP, IPPROTO_RAW, IPPROTO_ROUTING,
+        IPPROTO_TCP, IPPROTO_TCP as SOL_TCP, IPPROTO_UDP, MSG_CTRUNC, MSG_DONTROUTE, MSG_OOB,
+        MSG_PEEK, MSG_TRUNC, MSG_WAITALL, NI_NAMEREQD, NI_NOFQDN, NI_NUMERICHOST, NI_NUMERICSERV,
+        SHUT_RD, SHUT_RDWR, SHUT_WR, SOCK_DGRAM, SOCK_STREAM, SOL_SOCKET, SO_BROADCAST, SO_ERROR,
+        SO_LINGER, SO_OOBINLINE, SO_REUSEADDR, SO_TYPE, TCP_NODELAY,
     };
 
     #[cfg(unix)]
@@ -80,14 +83,11 @@ mod _socket {
         vm.ctx.exceptions.os_error.clone()
     }
 
-    #[pyattr(once)]
+    #[pyattr(name = "timeout", once)]
     fn timeout(vm: &VirtualMachine) -> PyTypeRef {
-        vm.ctx.new_exception_type(
-            "socket",
-            "timeout",
-            Some(vec![vm.ctx.exceptions.os_error.clone()]),
-        )
+        PyType::new_simple_ref("TimeoutError", &error(vm)).unwrap()
     }
+
     #[pyattr(once)]
     fn herror(vm: &VirtualMachine) -> PyTypeRef {
         vm.ctx.new_exception_type(
